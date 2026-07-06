@@ -10,3 +10,6 @@
 [submodule "cosmos-framework"]
 	path = cosmos-framework
 	url = https://github.com/NVIDIA/cosmos-framework.git
+[submodule "lerobot"]
+	path = lerobot
+	url = https://github.com/huggingface/lerobot.git
