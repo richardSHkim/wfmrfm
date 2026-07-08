@@ -13,3 +13,6 @@
 [submodule "lerobot"]
 	path = lerobot
 	url = https://github.com/huggingface/lerobot.git
+[submodule "DISCOVERSE"]
+	path = DISCOVERSE
+	url = https://github.com/discoverse-dev/DISCOVERSE.git
