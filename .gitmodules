@@ -1,18 +1,18 @@
 [submodule "cosmos"]
-	path = cosmos
+	path = third_party/cosmos
 	url = https://github.com/NVIDIA/cosmos.git
 [submodule "Isaac-GR00T"]
-	path = Isaac-GR00T
+	path = third_party/Isaac-GR00T
 	url = https://github.com/NVIDIA/Isaac-GR00T.git
 [submodule "GR00T-WholeBodyControl"]
-	path = GR00T-WholeBodyControl
+	path = third_party/GR00T-WholeBodyControl
 	url = https://github.com/NVlabs/GR00T-WholeBodyControl.git
 [submodule "cosmos-framework"]
-	path = cosmos-framework
+	path = third_party/cosmos-framework
 	url = https://github.com/NVIDIA/cosmos-framework.git
 [submodule "lerobot"]
-	path = lerobot
+	path = third_party/lerobot
 	url = https://github.com/huggingface/lerobot.git
 [submodule "DISCOVERSE"]
-	path = DISCOVERSE
+	path = third_party/DISCOVERSE
 	url = https://github.com/discoverse-dev/DISCOVERSE.git
