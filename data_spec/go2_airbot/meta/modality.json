@@ -1,0 +1,26 @@
+{
+  "state": {
+    "arm_eef_9d": { "start": 0, "end": 9 },
+    "gripper_position": { "start": 9, "end": 10 },
+    "arm_joint_position": { "start": 10, "end": 16 },
+    "leg_joint_position": { "start": 16, "end": 28 },
+    "base_pose": { "start": 28, "end": 35 },
+    "base_velocity": { "start": 35, "end": 41 }
+  },
+  "action": {
+    "arm_eef_9d": { "start": 0, "end": 9 },
+    "gripper_position": { "start": 9, "end": 10 },
+    "arm_joint_position": { "start": 10, "end": 16 },
+    "leg_joint_position": { "start": 16, "end": 28 },
+    "base_velocity_command": { "start": 28, "end": 31 },
+    "base_height_command": { "start": 31, "end": 32 }
+  },
+  "video": {
+    "wrist": { "original_key": "observation.images.wrist" },
+    "exterior_left": { "original_key": "observation.images.exterior_left" },
+    "exterior_right": { "original_key": "observation.images.exterior_right" }
+  },
+  "annotation": {
+    "language.language_instruction": { "original_key": "task_index" }
+  }
+}

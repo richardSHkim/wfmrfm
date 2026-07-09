@@ -1,0 +1,77 @@
+{
+  "codebase_version": "v2.1",
+  "robot_type": "go2_airbot",
+  "total_episodes": 0,
+  "total_frames": 0,
+  "total_tasks": 0,
+  "total_videos": 0,
+  "total_chunks": 0,
+  "chunks_size": 1000,
+  "fps": 30,
+  "splits": { "train": "0:0" },
+  "data_path": "data/chunk-{episode_chunk:03d}/episode_{episode_index:06d}.parquet",
+  "video_path": "videos/chunk-{episode_chunk:03d}/{video_key}/episode_{episode_index:06d}.mp4",
+  "features": {
+    "observation.images.wrist": {
+      "dtype": "video",
+      "shape": [480, 640, 3],
+      "names": ["height", "width", "channel"],
+      "info": { "video.fps": 30.0, "video.codec": "h264", "video.pix_fmt": "yuv420p" }
+    },
+    "observation.images.exterior_left": {
+      "dtype": "video",
+      "shape": [480, 640, 3],
+      "names": ["height", "width", "channel"],
+      "info": { "video.fps": 30.0, "video.codec": "h264", "video.pix_fmt": "yuv420p" }
+    },
+    "observation.images.exterior_right": {
+      "dtype": "video",
+      "shape": [480, 640, 3],
+      "names": ["height", "width", "channel"],
+      "info": { "video.fps": 30.0, "video.codec": "h264", "video.pix_fmt": "yuv420p" }
+    },
+    "observation.state": {
+      "dtype": "float32",
+      "shape": [41],
+      "names": [
+        "arm_eef_x", "arm_eef_y", "arm_eef_z",
+        "arm_eef_rot6d_0", "arm_eef_rot6d_1", "arm_eef_rot6d_2",
+        "arm_eef_rot6d_3", "arm_eef_rot6d_4", "arm_eef_rot6d_5",
+        "gripper_position",
+        "arm_joint_0", "arm_joint_1", "arm_joint_2", "arm_joint_3", "arm_joint_4", "arm_joint_5",
+        "leg_FR_hip", "leg_FR_thigh", "leg_FR_calf",
+        "leg_FL_hip", "leg_FL_thigh", "leg_FL_calf",
+        "leg_RR_hip", "leg_RR_thigh", "leg_RR_calf",
+        "leg_RL_hip", "leg_RL_thigh", "leg_RL_calf",
+        "base_pos_x", "base_pos_y", "base_pos_z",
+        "base_quat_w", "base_quat_x", "base_quat_y", "base_quat_z",
+        "base_lin_vel_x", "base_lin_vel_y", "base_lin_vel_z",
+        "base_ang_vel_x", "base_ang_vel_y", "base_ang_vel_z"
+      ]
+    },
+    "action": {
+      "dtype": "float32",
+      "shape": [32],
+      "names": [
+        "arm_eef_x", "arm_eef_y", "arm_eef_z",
+        "arm_eef_rot6d_0", "arm_eef_rot6d_1", "arm_eef_rot6d_2",
+        "arm_eef_rot6d_3", "arm_eef_rot6d_4", "arm_eef_rot6d_5",
+        "gripper_position",
+        "arm_joint_0", "arm_joint_1", "arm_joint_2", "arm_joint_3", "arm_joint_4", "arm_joint_5",
+        "leg_FR_hip", "leg_FR_thigh", "leg_FR_calf",
+        "leg_FL_hip", "leg_FL_thigh", "leg_FL_calf",
+        "leg_RR_hip", "leg_RR_thigh", "leg_RR_calf",
+        "leg_RL_hip", "leg_RL_thigh", "leg_RL_calf",
+        "base_vel_cmd_vx", "base_vel_cmd_vy", "base_vel_cmd_wz",
+        "base_height_command"
+      ]
+    },
+    "timestamp":    { "dtype": "float32", "shape": [1], "names": null },
+    "frame_index":  { "dtype": "int64",   "shape": [1], "names": null },
+    "episode_index":{ "dtype": "int64",   "shape": [1], "names": null },
+    "index":        { "dtype": "int64",   "shape": [1], "names": null },
+    "task_index":   { "dtype": "int64",   "shape": [1], "names": null },
+    "next.done":    { "dtype": "bool",    "shape": [1], "names": null },
+    "next.success": { "dtype": "bool",    "shape": [1], "names": null }
+  }
+}
