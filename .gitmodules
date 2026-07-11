@@ -19,3 +19,6 @@
 [submodule "third_party/IsaacLab-Arena"]
 	path = third_party/IsaacLab-Arena
 	url = https://github.com/isaac-sim/IsaacLab-Arena.git
+[submodule "third_party/go2_airbot_play_description"]
+	path = third_party/go2_airbot_play_description
+	url = https://github.com/Superb-AI-Suite/go2_airbot_play_description.git
