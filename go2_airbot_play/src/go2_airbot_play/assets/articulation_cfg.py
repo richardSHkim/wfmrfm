@@ -102,15 +102,17 @@ GO2_AIRBOT_PLAY_CFG = ArticulationCfg(
             damping=0.5,
             friction=0.0,
         ),
-        # Airbot Play arm — position-tracking PD.
-        # TODO: replace effort/velocity limits + gains with the Airbot Play datasheet
-        # values; these are provisional and tuned only for stable position tracking.
+        # Airbot Play arm — position-tracking PD. Gains must be stiff enough to HOLD the
+        # arm against gravity: at stiffness=150/effort=18 the arm collapsed to its joint
+        # limit under zero-action (verified). These firmer gains hold the ready pose.
+        # TODO: replace with the Airbot Play datasheet torque/velocity limits + tuned gains
+        # (or add explicit gravity compensation) once available.
         "arm": ImplicitActuatorCfg(
             joint_names_expr=["joint[1-6]"],
-            effort_limit=18.0,
+            effort_limit=87.0,
             velocity_limit_sim=3.14,
-            stiffness=150.0,
-            damping=15.0,
+            stiffness=800.0,
+            damping=40.0,
         ),
         # Airbot Play parallel gripper (driver + mimic fingers, coupled by control layer).
         "gripper": ImplicitActuatorCfg(
