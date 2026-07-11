@@ -108,7 +108,7 @@ GO2_AIRBOT_PLAY_CFG = ArticulationCfg(
         "arm": ImplicitActuatorCfg(
             joint_names_expr=["joint[1-6]"],
             effort_limit=18.0,
-            velocity_limit=3.14,
+            velocity_limit_sim=3.14,
             stiffness=150.0,
             damping=15.0,
         ),
@@ -116,7 +116,7 @@ GO2_AIRBOT_PLAY_CFG = ArticulationCfg(
         "gripper": ImplicitActuatorCfg(
             joint_names_expr=["g2_joint", "g2_left_joint", "g2_right_joint"],
             effort_limit=100.0,
-            velocity_limit=10.0,
+            velocity_limit_sim=10.0,
             stiffness=200.0,
             damping=10.0,
         ),
