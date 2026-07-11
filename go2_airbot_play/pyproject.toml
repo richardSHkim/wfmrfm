@@ -1,0 +1,17 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "go2_airbot_play"
+version = "0.1.0"
+description = "Isaac Lab / Arena extension for the Unitree Go2 + Airbot Play + wrist D435i embodiment"
+requires-python = ">=3.10"
+# Runtime deps (isaaclab, isaaclab_arena) are provided by the Isaac Sim / Arena
+# environment: isaaclab via `isaaclab.sh -i`, isaaclab_arena via `pip install -e` on the
+# third_party/IsaacLab-Arena submodule. They are intentionally NOT pinned here so that
+# `pip install -e .` does not attempt to fetch them from PyPI (they are not published).
+dependencies = []
+
+[tool.setuptools.packages.find]
+where = ["src"]
