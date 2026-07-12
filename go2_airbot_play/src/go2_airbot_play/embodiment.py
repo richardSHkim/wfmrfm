@@ -43,8 +43,11 @@ _WRIST_OPTICAL_FRAME = (
     + "/wrist_camera_link/wrist_camera_color_frame/wrist_camera_color_optical_frame"
 )
 # Wrist D435i colour-optical frame offset is baked into the USD, so the Arena camera is
-# spawned directly on that frame with a zero offset.
+# spawned directly on that frame with an IDENTITY offset — it then exactly matches the
+# D435i RGB sensor pose (floor toward the image bottom; any tilt is the real arm pose).
 _WRIST_CAM_PRIM = _WRIST_OPTICAL_FRAME + "/wrist_cam"
+# Go2's built-in front RealSense frame.
+_INTEL_CAMERA_FRAME = _BASE_LINK + "/intel_camera"
 
 
 @register_asset
@@ -146,11 +149,13 @@ class Go2AirbotPlayCameraCfg:
     """
 
     wrist_cam: CameraCfg | TiledCameraCfg = MISSING
+    go2_front_cam: CameraCfg | TiledCameraCfg = MISSING
     overview_cam: CameraCfg | TiledCameraCfg = MISSING
 
     def __post_init__(self):
         is_tiled = getattr(self, "_is_tiled_camera", False)
         CameraClass = TiledCameraCfg if is_tiled else CameraCfg
+        # Wrist D435i RGB: identity offset on the colour-optical frame == exact D435 pose.
         self.wrist_cam = CameraClass(
             prim_path=_WRIST_CAM_PRIM,
             update_period=0.0,
@@ -158,7 +163,22 @@ class Go2AirbotPlayCameraCfg:
             width=320,
             data_types=["rgb"],
             spawn=sim_utils.PinholeCameraCfg(focal_length=18.0, clipping_range=(0.05, 20.0)),
-            offset=CameraClass.OffsetCfg(pos=(0.0, 0.0, 0.0), rot=(0.5, -0.5, 0.5, -0.5), convention="ros"),
+            offset=CameraClass.OffsetCfg(pos=(0.0, 0.0, 0.0), rot=(0.0, 0.0, 0.0, 1.0), convention="ros"),
+        )
+        # Go2 built-in front RealSense: mounted on the intel_camera frame, looking forward
+        # and slightly down (ros quaternion from a lookat toward (1,0,-0.35)).
+        self.go2_front_cam = CameraClass(
+            prim_path=_INTEL_CAMERA_FRAME + "/go2_front_cam",
+            update_period=0.0,
+            height=240,
+            width=320,
+            data_types=["rgb"],
+            spawn=sim_utils.PinholeCameraCfg(focal_length=16.0, clipping_range=(0.05, 40.0)),
+            offset=CameraClass.OffsetCfg(
+                pos=(0.02, 0.0, 0.0),
+                rot=(-0.57670, 0.57670, -0.40916, 0.40916),
+                convention="ros",
+            ),
         )
         # Third-person chase camera on base_link, following the Arena droid pattern
         # (CameraCfg + convention="opengl" + a pre-computed offset). Pose looks from
