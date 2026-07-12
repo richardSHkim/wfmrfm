@@ -124,8 +124,10 @@ class Go2AirbotPlayPickAndPlaceEnvironment(ExampleEnvironmentBase):
             enable_cameras=getattr(args_cli, "enable_cameras", False),
         )
 
-        # Robot at the room origin (galileo floor is at z=0), facing +x toward the objects.
-        embodiment.set_initial_pose(Pose(position_xyz=(0.0, 0.0, 0.0), rotation_xyzw=(0.0, 0.0, 0.0, 1.0)))
+        # Robot at the room origin (galileo floor z=0), facing +x. z=0.40 is the Go2
+        # standing base height — spawning the base at z=0 drops the body onto the floor
+        # and the robot collapses.
+        embodiment.set_initial_pose(Pose(position_xyz=(0.0, 0.0, 0.40), rotation_xyzw=(0.0, 0.0, 0.0, 1.0)))
         # Pick object + destination on the floor in front of the robot, within arm reach.
         # TODO: verify against the Airbot Play reachable workspace once IK/teleop is wired.
         pick_up_object.set_initial_pose(Pose(position_xyz=(0.40, 0.12, 0.06), rotation_xyzw=(0.0, 0.0, 0.0, 1.0)))
