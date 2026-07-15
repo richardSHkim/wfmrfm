@@ -22,3 +22,10 @@
 [submodule "third_party/go2_airbot_play_description"]
 	path = third_party/go2_airbot_play_description
 	url = https://github.com/Superb-AI-Suite/go2_airbot_play_description.git
+[submodule "third_party/vla-evaluation-harness"]
+	path = third_party/vla-evaluation-harness
+	url = https://github.com/allenai/vla-evaluation-harness.git
+[submodule "third_party/RoboTwin"]
+	path = third_party/RoboTwin
+	url = https://github.com/RoboTwin-Platform/RoboTwin.git
+	branch = IsaacLab-Arena
