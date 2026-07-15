@@ -144,10 +144,9 @@ class Go2AirbotPlayCameraCfg:
     """Wrist D435i colour camera + a third-person chase camera on the robot base.
 
     The ``overview_cam`` is a third-person eval view (recorded via ``--record_camera_video``).
-    It replicates, as a real Camera SENSOR, the exact pose Arena's PickAndPlaceTask viewport
-    viewer uses for this room (look at the workspace from offset ~[-1.5,-1.5,1.5]) — because
-    the headless viewport recorder ignores that ViewerCfg, a sensor at the same pose is the
-    robust way to reuse the room's intended third-person vantage.
+    It is a real Camera SENSOR fixed to the env prim, looking at the robot workspace from an
+    offset of ~[-1.5,-1.5,1.5] — because the headless viewport recorder ignores ViewerCfg, a
+    sensor at that pose is the robust way to capture a third-person vantage of the robot.
     """
 
     wrist_cam: CameraCfg | TiledCameraCfg = MISSING
@@ -182,14 +181,11 @@ class Go2AirbotPlayCameraCfg:
                 convention="ros",
             ),
         )
-        # Third-person chase camera on base_link, following the Arena droid pattern
-        # (CameraCfg + convention="opengl" + a pre-computed offset). Pose looks from
-        # behind-left-above at the robot center; quaternion computed for the opengl
-        # convention (camera looks along -Z) via a lookat at (0,0,0.5) from (-1.6,-1.6,1.1).
-        # ENV-FIXED third-person, at the exact pose Arena's PickAndPlaceTask viewer uses for
-        # this room: eye = workspace + [-1.5,-1.5,1.5], looking at the workspace (~the pick
-        # object at (0.40,0.12,0.06)). Mounted on the env prim (not the robot) so it is not
-        # occluded by the robot / does not tumble with the base.
+        # Third-person eval camera, following the Arena droid pattern (CameraCfg +
+        # convention="opengl" + a pre-computed offset). ENV-FIXED (mounted on the env prim,
+        # not the robot) so it is not occluded by the robot / does not tumble with the base.
+        # Eye ~= workspace + [-1.5,-1.5,1.5], looking down-forward at the robot workspace
+        # (quaternion pre-computed for the opengl convention, where the camera looks along -Z).
         self.overview_cam = CameraClass(
             prim_path="{ENV_REGEX_NS}/overview_cam",
             update_period=0.0,
