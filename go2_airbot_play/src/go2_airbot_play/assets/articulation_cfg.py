@@ -78,10 +78,11 @@ GO2_AIRBOT_PLAY_CFG = ArticulationCfg(
             "F[L,R]_thigh_joint": 0.8,
             "R[L,R]_thigh_joint": 1.0,
             ".*_calf_joint": -1.5,
-            # --- Airbot Play arm: folded "ready" pose (within joint limits) ---
+            # --- Airbot Play arm: neutral "ready" pose — all joints 0 (arm extended forward,
+            # gripper over the workspace in front of the robot; within joint limits) ---
             "joint1": 0.0,
-            "joint2": -0.6,
-            "joint3": 1.2,
+            "joint2": 0.0,
+            "joint3": 0.0,
             "joint4": 0.0,
             "joint5": 0.0,
             "joint6": 0.0,

@@ -156,25 +156,48 @@ class Go2AirbotPlayCameraCfg:
     def __post_init__(self):
         is_tiled = getattr(self, "_is_tiled_camera", False)
         CameraClass = TiledCameraCfg if is_tiled else CameraCfg
-        # Wrist D435i RGB: identity offset on the colour-optical frame == exact D435 pose.
+        # Wrist Intel RealSense D435i RGB, intrinsics matched to the D435i colour sensor:
+        # FOV 69.4 deg (H) x 42.5 deg (V), native 16:9 (1920x1080 max; 1280x720 used here to
+        # keep render cost reasonable). Pinhole model, so focal_length is derived from the
+        # 69.4 deg horizontal FOV at Isaac's 20.955 mm horizontal aperture, and the vertical
+        # aperture is set to width:height (square pixels) so the 42.5 deg vertical FOV follows.
+        # Identity offset on the colour-optical frame == exact D435i RGB pose.
+        # Source: Intel RealSense D435i product specs (RGB 1920x1080@30, FOV 69.4x42.5x77 deg).
         self.wrist_cam = CameraClass(
             prim_path=_WRIST_CAM_PRIM,
             update_period=0.0,
-            height=240,
-            width=320,
+            height=720,
+            width=1280,
             data_types=["rgb"],
-            spawn=sim_utils.PinholeCameraCfg(focal_length=18.0, clipping_range=(0.05, 20.0)),
+            spawn=sim_utils.PinholeCameraCfg(
+                focal_length=15.131,
+                horizontal_aperture=20.955,
+                vertical_aperture=11.787,
+                clipping_range=(0.05, 20.0),
+            ),
             offset=CameraClass.OffsetCfg(pos=(0.0, 0.0, 0.0), rot=(0.0, 0.0, 0.0, 1.0), convention="ros"),
         )
-        # Go2 built-in front RealSense: mounted on the intel_camera frame, looking forward
-        # and slightly down (ros quaternion from a lookat toward (1,0,-0.35)).
+        # Go2 built-in front camera, intrinsics matched to Unitree Go2's stock front camera:
+        # ultra-wide 120 deg FOV, 1280x720 (16:9). The 120 deg is taken as the HORIZONTAL FOV
+        # (Unitree quotes a single number; if it is actually the diagonal, hFOV ~= 113 deg --
+        # adjust focal_length accordingly). Pinhole focal_length derived from 120 deg hFOV at
+        # 20.955 mm aperture; square-pixel vertical aperture gives ~88.5 deg vertical FOV.
+        # NOTE: the real lens is wide-angle/fisheye; a pinhole matches the FOV envelope but not
+        # the barrel distortion -- use FisheyeCameraCfg + calibration if distortion fidelity is
+        # required. Mounted on the intel_camera frame, looking forward and slightly down.
+        # Source: Unitree Go2 specs (front camera 1280x720, 120 deg ultra-wide-angle).
         self.go2_front_cam = CameraClass(
             prim_path=_INTEL_CAMERA_FRAME + "/go2_front_cam",
             update_period=0.0,
-            height=240,
-            width=320,
+            height=720,
+            width=1280,
             data_types=["rgb"],
-            spawn=sim_utils.PinholeCameraCfg(focal_length=16.0, clipping_range=(0.05, 40.0)),
+            spawn=sim_utils.PinholeCameraCfg(
+                focal_length=6.049,
+                horizontal_aperture=20.955,
+                vertical_aperture=11.787,
+                clipping_range=(0.05, 40.0),
+            ),
             offset=CameraClass.OffsetCfg(
                 pos=(0.02, 0.0, 0.0),
                 rot=(-0.57670, 0.57670, -0.40916, 0.40916),
