@@ -64,8 +64,15 @@ def main() -> None:
     p.add_argument("--hdf5", required=True, type=Path)
     p.add_argument("--out", required=True, type=Path, help="LeRobot dataset dir to create.")
     p.add_argument("--instruction", default="pick up the cube and place it in the bowl")
-    p.add_argument("--modality-json", default=Path(__file__).resolve().parent / "modality_arm.json", type=Path)
+    p.add_argument("--action-space", choices=["eef", "joint"], default="eef",
+                   help="eef = relative-EEF arm (action.eef_pose 9D); joint = absolute arm joints (action 7D).")
+    p.add_argument("--modality-json", default=None, type=Path,
+                   help="Override the meta/modality.json template (default: modality_arm.json for eef, "
+                        "modality_joint.json for joint).")
     a = p.parse_args()
+    if a.modality_json is None:
+        _here = Path(__file__).resolve().parent
+        a.modality_json = _here / ("modality_joint.json" if a.action_space == "joint" else "modality_arm.json")
 
     out = a.out
     (out / "data" / "chunk-000").mkdir(parents=True, exist_ok=True)
@@ -113,17 +120,12 @@ def main() -> None:
             print(f"[conv] SKIP {demo}: unreadable ({type(e).__name__}: {str(e).splitlines()[0][:70]})", flush=True)
             continue
 
-        arm = sj[:, ARM_SLICE].astype(np.float64)                      # (n,6)
-        grip_state = sj[:, GRIPPER_IDX:GRIPPER_IDX + 1].astype(np.float64)  # (n,1)
-        obs_state = np.concatenate([arm, grip_state], axis=1)          # (n,7)
-        obs_eef9 = pos_quat_wxyz_to_xyz_rot6d(eef_obs[:, :3], eef_obs[:, 3:7])  # (n,9)
-        act_eef9 = pos_quat_wxyz_to_xyz_rot6d(acts[:, :3], acts[:, 3:7])        # (n,9)
+        arm = sj[:, ARM_SLICE].astype(np.float64)                      # (n,6) arm joints (absolute)
+        grip_state = sj[:, GRIPPER_IDX:GRIPPER_IDX + 1].astype(np.float64)  # (n,1) g2_joint (achieved)
+        obs_state = np.concatenate([arm, grip_state], axis=1)          # (n,7) arm(6)+gripper(1)
 
-        df = pd.DataFrame({
+        cols = {
             "observation.state": list(obs_state),
-            "observation.eef_pose": list(obs_eef9),
-            "action": list(grip_action),
-            "action.eef_pose": list(act_eef9),
             "timestamp": np.arange(n, dtype=np.float64) / FPS,
             "annotation.human.task_description": np.zeros(n, dtype=np.int64),
             "task_index": np.zeros(n, dtype=np.int64),
@@ -132,7 +134,19 @@ def main() -> None:
             "index": np.arange(total, total + n, dtype=np.int64),
             "next.reward": np.concatenate([np.zeros(n - 1), [1.0]]).astype(np.float64),
             "next.done": np.concatenate([np.zeros(n - 1, bool), [True]]),
-        })
+        }
+        if a.action_space == "joint":
+            # ABSOLUTE joint action = [arm 6 joints (achieved), gripper 1 (commanded)] = 7D.
+            # delta_indices [0..15] -> model predicts the next-16-step joint trajectory.
+            act_joint = np.concatenate([arm, grip_action], axis=1)     # (n,7)
+            cols["action"] = list(act_joint)
+        else:
+            obs_eef9 = pos_quat_wxyz_to_xyz_rot6d(eef_obs[:, :3], eef_obs[:, 3:7])  # (n,9)
+            act_eef9 = pos_quat_wxyz_to_xyz_rot6d(acts[:, :3], acts[:, 3:7])        # (n,9)
+            cols["observation.eef_pose"] = list(obs_eef9)
+            cols["action"] = list(grip_action)                         # (n,1) gripper only
+            cols["action.eef_pose"] = list(act_eef9)                   # (n,9) EEF pose
+        df = pd.DataFrame(cols)
         df.to_parquet(out / "data" / "chunk-000" / f"episode_{ep_out:06d}.parquet")
 
         for key in CAMERAS:
@@ -155,6 +169,19 @@ def main() -> None:
             fh.write(json.dumps(e) + "\n")
     import shutil
     shutil.copy(a.modality_json, meta / "modality.json")
+    _arm_grip_names = ["joint1", "joint2", "joint3", "joint4", "joint5", "joint6", "gripper"]
+    if a.action_space == "joint":
+        low_dim_features = {
+            "observation.state": {"dtype": "float32", "shape": [7], "names": _arm_grip_names},
+            "action": {"dtype": "float32", "shape": [7], "names": _arm_grip_names},
+        }
+    else:
+        low_dim_features = {
+            "observation.state": {"dtype": "float32", "shape": [7], "names": _arm_grip_names},
+            "observation.eef_pose": {"dtype": "float32", "shape": [9]},
+            "action": {"dtype": "float32", "shape": [1], "names": ["gripper"]},
+            "action.eef_pose": {"dtype": "float32", "shape": [9]},
+        }
     info = {
         "codebase_version": "v2.1", "robot_type": "go2_airbot_play",
         "total_episodes": len(episodes_info), "total_frames": total, "total_tasks": 1,
@@ -163,11 +190,7 @@ def main() -> None:
         "data_path": "data/chunk-{episode_chunk:03d}/episode_{episode_index:06d}.parquet",
         "video_path": "videos/chunk-{episode_chunk:03d}/{video_key}/episode_{episode_index:06d}.mp4",
         "features": {
-            "observation.state": {"dtype": "float32", "shape": [7],
-                                  "names": ["joint1", "joint2", "joint3", "joint4", "joint5", "joint6", "gripper"]},
-            "observation.eef_pose": {"dtype": "float32", "shape": [9]},
-            "action": {"dtype": "float32", "shape": [1], "names": ["gripper"]},
-            "action.eef_pose": {"dtype": "float32", "shape": [9]},
+            **low_dim_features,
             **{f"observation.images.{key}": {"dtype": "video", "shape": [180, 320, 3],
                                              "names": ["height", "width", "channel"]} for key in CAMERAS},
         },
