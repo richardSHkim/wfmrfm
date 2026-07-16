@@ -28,8 +28,11 @@
         }
     },
     "video": {
-        "ego_view": {
-            "original_key": "observation.images.ego_view"
+        "front": {
+            "original_key": "observation.images.front"
+        },
+        "wrist": {
+            "original_key": "observation.images.wrist"
         }
     },
     "annotation": {

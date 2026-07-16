@@ -12,11 +12,12 @@ EEF-primary Phase-1 layout (matches ``modality_arm.json`` / ``go2_airbot_arm_dat
 directly. Absolute->relative EEF is left to the GR00T processor at train time.
 
 Layout produced (per frame):
-  observation.state       = [arm(6 abs joints), gripper(1 abs, g2_joint m)]      (7)
-  observation.eef_pose    = [xyz, rot6d]  from eef_pose_in_base (base_link frame) (9)
-  action                  = [gripper(1 abs target, m)]                            (1)
-  action.eef_pose         = [xyz, rot6d]  from the IK pose command (base frame)   (9)
-  observation.images.ego_view = wrist_cam_rgb mp4
+  observation.state          = [arm(6 abs joints), gripper(1 abs, g2_joint m)]    (7)
+  observation.eef_pose       = [xyz, rot6d]  from eef_pose_in_base (base_link)     (9)
+  action                     = [gripper(1 abs target, m)]                          (1)
+  action.eef_pose            = [xyz, rot6d]  from the IK pose command (base frame) (9)
+  observation.images.front   = go2_front_cam_rgb mp4  (exterior/front view)
+  observation.images.wrist   = wrist_cam_rgb mp4       (wrist D435i view)
   annotation.human.task_description = task_index -> meta/tasks.jsonl
 
 Run in the Arena/Isaac container:
@@ -42,6 +43,9 @@ from scipy.spatial.transform import Rotation
 ARM_SLICE = slice(12, 18)   # joint1..joint6 (absolute, rad)
 GRIPPER_IDX = 20            # g2_joint driver (absolute opening, m)
 FPS = 50                    # control rate: sim dt 0.005 * decimation 4 = 0.02 s
+# Camera views: LeRobot key -> HDF5 camera_obs key. Order matters (fed to the model in order).
+# overview_cam_rgb is a third-person eval view; omitted from the policy observation.
+CAMERAS = {"front": "go2_front_cam_rgb", "wrist": "wrist_cam_rgb"}
 
 
 def pos_quat_wxyz_to_xyz_rot6d(pos: np.ndarray, quat_wxyz: np.ndarray) -> np.ndarray:
@@ -60,14 +64,15 @@ def main() -> None:
     p.add_argument("--hdf5", required=True, type=Path)
     p.add_argument("--out", required=True, type=Path, help="LeRobot dataset dir to create.")
     p.add_argument("--instruction", default="pick up the cube and place it in the bowl")
-    p.add_argument("--cam", default="wrist_cam_rgb", help="camera_obs key -> ego_view video.")
     p.add_argument("--modality-json", default=Path(__file__).resolve().parent / "modality_arm.json", type=Path)
     a = p.parse_args()
 
     out = a.out
     (out / "data" / "chunk-000").mkdir(parents=True, exist_ok=True)
-    vid_dir = out / "videos" / "chunk-000" / "observation.images.ego_view"
-    vid_dir.mkdir(parents=True, exist_ok=True)
+    vid_dirs = {}
+    for key in CAMERAS:
+        vid_dirs[key] = out / "videos" / "chunk-000" / f"observation.images.{key}"
+        vid_dirs[key].mkdir(parents=True, exist_ok=True)
     meta = out / "meta"
     meta.mkdir(parents=True, exist_ok=True)
 
@@ -116,8 +121,10 @@ def main() -> None:
         })
         df.to_parquet(out / "data" / "chunk-000" / f"episode_{ep:06d}.parquet")
 
-        frames = torch.from_numpy(np.asarray(d[f"camera_obs/{a.cam}"]))  # (n,H,W,3) uint8
-        torchvision.io.write_video(str(vid_dir / f"episode_{ep:06d}.mp4"), frames, FPS, video_codec="h264")
+        for key, hdf5_cam in CAMERAS.items():
+            frames = torch.from_numpy(np.asarray(d[f"camera_obs/{hdf5_cam}"]))  # (n,H,W,3) uint8
+            assert frames.shape[0] == n, f"{demo} {hdf5_cam}: {frames.shape[0]} frames != {n}"
+            torchvision.io.write_video(str(vid_dirs[key] / f"episode_{ep:06d}.mp4"), frames, FPS, video_codec="h264")
 
         episodes_info.append({"episode_index": ep, "tasks": [a.instruction], "length": n})
         total += n
@@ -145,8 +152,8 @@ def main() -> None:
             "observation.eef_pose": {"dtype": "float32", "shape": [9]},
             "action": {"dtype": "float32", "shape": [1], "names": ["gripper"]},
             "action.eef_pose": {"dtype": "float32", "shape": [9]},
-            "observation.images.ego_view": {"dtype": "video", "shape": [180, 320, 3],
-                                            "names": ["height", "width", "channel"]},
+            **{f"observation.images.{key}": {"dtype": "video", "shape": [180, 320, 3],
+                                             "names": ["height", "width", "channel"]} for key in CAMERAS},
         },
     }
     with open(meta / "info.json", "w") as fh:

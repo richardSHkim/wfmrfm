@@ -29,7 +29,7 @@ ACTION_HORIZON = 16
 go2_airbot_arm_config = {
     "video": ModalityConfig(
         delta_indices=[0],
-        modality_keys=["ego_view"],
+        modality_keys=["front", "wrist"],
     ),
     "state": ModalityConfig(
         delta_indices=[0],

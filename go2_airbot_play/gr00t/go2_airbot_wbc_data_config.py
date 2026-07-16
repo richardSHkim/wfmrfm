@@ -55,12 +55,13 @@ from gr00t.data.types import (
 ACTION_HORIZON = 16
 
 go2_airbot_wbc_config = {
-    # Single ego view = the wrist Intel RealSense D435i. The Arena HDF5->LeRobot converter
-    # emits one POV video ("ego_view"); a second (exterior/front) view needs the multi-cam
-    # converter extension noted in the README.
+    # Two views: Go2 front (exterior) + wrist Intel RealSense D435i. NOTE: the Arena
+    # HDF5->LeRobot converter emits only one POV video, so this full-WBC datagen path needs
+    # the multi-cam converter extension (the direct convert_pickplace_to_lerobot.py already
+    # writes both views).
     "video": ModalityConfig(
         delta_indices=[0],
-        modality_keys=["ego_view"],
+        modality_keys=["front", "wrist"],
     ),
     # Proprioception: the absolute EEF pose (reference for the relative arm action), the arm
     # joint angles, and the gripper opening. Mirrors the DROID ``oxe_droid`` state layout

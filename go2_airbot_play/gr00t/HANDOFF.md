@@ -39,7 +39,7 @@ git). ~2.6 MB, self-contained GR00T-LeRobot v2:
 ```
 go2airbot_pickplace/lerobot/
   data/chunk-000/episode_0000{00..09}.parquet
-  videos/chunk-000/observation.images.ego_view/episode_0000{00..09}.mp4
+  videos/chunk-000/observation.images.{front,wrist}/episode_0000{00..09}.mp4
   meta/{modality.json, info.json, episodes.jsonl, tasks.jsonl}     # NOTE: no stats.json yet
 ```
 
@@ -58,7 +58,7 @@ Built from `scripts/collect_pickplace_dataset.py` (Arena RecorderManager, script
 - Action space (14→) **10 dims here**: `arm_eef` 9D (relative EEF, xyz+rot6d) + `gripper` 1D.
 - **EEF is in the `base_link` (arm-mount) frame**, absolute. GR00T's processor converts
   absolute→relative at train time — the dataset stores absolute on purpose; do not "fix" this.
-- Single camera `ego_view` = wrist Intel D435i, 180×320.
+- Two cameras: `front` (Go2 exterior view) + `wrist` (Intel D435i), both 180×320.
 
 **Review (passed, on the collection server):** no NaN/Inf; rot6d rows orthonormal; arm joints in
 range; gripper ∈ [0, 0.072] m; base-frame EEF bounded (x[.14,.48] y[-.18,.16] z[.15,.31]);

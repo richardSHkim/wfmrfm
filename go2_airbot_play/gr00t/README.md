@@ -42,7 +42,7 @@ recommended, cross-embodiment representation — `Isaac-GR00T/README.md` feature
 ## Action / state contract
 
 VLA action = **14 dims** (arm 9 + gripper 1 + base_height 1 + navigate 3). VLA state = **16
-dims** (arm_eef 9 + arm joints 6 + gripper 1). Camera: single ego view (wrist D435i).
+dims** (arm_eef 9 + arm joints 6 + gripper 1). Cameras: `front` (Go2 exterior) + `wrist` (D435i).
 
 | Modality | key | dims | rep / type / format | LeRobot column |
 |---|---|---|---|---|
@@ -53,7 +53,8 @@ dims** (arm_eef 9 + arm joints 6 + gripper 1). Camera: single ego view (wrist D4
 | state | `arm_eef` | 9 | — | `observation.eef_pose` |
 | state | `arm` | 6 | — | `observation.state` [0:6] |
 | state | `gripper` | 1 | — | `observation.state` [6:7] |
-| video | `ego_view` | — | — | `observation.images.ego_view` |
+| video | `front` | — | — | `observation.images.front` |
+| video | `wrist` | — | — | `observation.images.wrist` |
 | language | `annotation.human.task_description` | — | — | `task_index` → `meta/tasks.jsonl` |
 
 * `arm_eef` is stored **absolute, in the `base_link` (arm-mount) frame** as `[x, y, z, rot6d(6)]`
@@ -133,8 +134,9 @@ dims** (arm_eef 9 + arm joints 6 + gripper 1). Camera: single ego view (wrist D4
   (`assert eef_pose.shape == (length, 14)`) and single-cam POV, and lives in a submodule we
   don't edit. Running it joint-space-only (omit `left_/right_eef_*`) makes it skip EEF
   cleanly; we then add single-arm 9D EEF ourselves. Zero submodule changes.
-* **Single `ego_view` (wrist)**: the converter emits one POV video. A second exterior view is
-  desirable for a mobile manipulator but needs a converter multi-cam extension.
+* **Two views (`front` + `wrist`)**: the direct `convert_pickplace_to_lerobot.py` writes both
+  (Go2 exterior + wrist D435i). The Arena converter (full-WBC datagen path) emits a single POV,
+  so that path still needs a multi-cam extension to match.
 
 ## Gaps / TODO before a real fine-tune
 
@@ -149,5 +151,6 @@ dims** (arm_eef 9 + arm joints 6 + gripper 1). Camera: single ego view (wrist D4
    against GR00T's convention.
 3. **Sim-order YAML** assumes a 7-DOF (arm+gripper) recording; widen to the full 21-DOF
    articulation order if the collection records all joints.
-4. **Multi-cam** (wrist + front) and **larger action horizon (50)** are optional upgrades
-   (both require regenerating stats; multi-cam also needs a converter change).
+4. **Larger action horizon (50)** is an optional upgrade (requires regenerating stats). The
+   Arena converter (full-WBC path) is still single-POV — extend it to two views to match the
+   direct converter before collecting full-WBC data.
