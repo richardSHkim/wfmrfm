@@ -1,0 +1,49 @@
+# Copyright (c) 2026, WFMRFM project.
+# SPDX-License-Identifier: Apache-2.0
+
+# Gr00tDatasetConfig for the Go2 + Airbot Play decoupled-WBC dataset.
+# Consumed by the Arena converter (run from the Arena repo root inside its container):
+#   python isaaclab_arena_gr00t/lerobot/convert_hdf5_to_lerobot.py --yaml_file <this file>
+# then run ../add_single_arm_eef.py to add the EEF (rot6d) columns + install ../modality.json.
+#
+# This is JOINT-SPACE ONLY on purpose (see modality_converter.json): the EEF fields are added
+# by the post-process, so left_/right_eef_* are intentionally omitted here (which makes the
+# converter skip its bimanual-only EEF branch). Fill in `hdf5_name`, the language instruction,
+# and verify the *_name_sim keys against your actual collected HDF5.
+
+# --- storage --------------------------------------------------------------------------
+data_root: "/mnt/nas2/users/shkim/work/projects/wfmrfm/scratchpad_out/datasets"
+hdf5_name: "go2airbot_pickplace.hdf5"          # TODO: your collected HDF5 (under data_root)
+language_instruction: "pick up the cube and place it in the bowl"   # TODO: per-dataset
+task_index: 0
+
+# --- HDF5 field names (verify against the collection script) --------------------------
+state_name_sim: "robot_joint_pos"              # obs group; 7 = [joint1..joint6, g2_joint]
+action_name_sim: "processed_actions"           # 7 = [joint1..joint6, g2_joint] targets
+teleop_base_height_command_name_sim: "base_height_cmd"   # 1D absolute target height (m)
+teleop_navigate_command_name_sim: "navigate_cmd"         # 3D [vx, vy, wz] -> RL loco policy
+# left_/right_eef_* deliberately omitted: EEF is added by add_single_arm_eef.py, which reads
+# the arm eef_pos/eef_quat (in the base_link frame, wxyz) directly from the HDF5.
+pov_cam_name_sim: "wrist_cam_rgb"              # TODO: camera_obs key of the wrist D435i view
+
+# --- LeRobot field names --------------------------------------------------------------
+state_name_lerobot: "observation.state"
+action_name_lerobot: "action"
+video_name_lerobot: "observation.images.ego_view"
+task_description_lerobot: "annotation.human.task_description"
+
+# --- parquet / video -----------------------------------------------------------------
+chunks_size: 1000
+fps: 30                                         # match the recorded video frame rate
+
+# --- templates (absolute, in-tree) ---------------------------------------------------
+modality_template_path: "/mnt/nas2/users/shkim/work/projects/wfmrfm/go2_airbot_play/gr00t/modality_converter.json"
+info_template_path: "/mnt/nas2/users/shkim/work/projects/wfmrfm/go2_airbot_play/gr00t/info.json"
+policy_joints_config_path: "/mnt/nas2/users/shkim/work/projects/wfmrfm/go2_airbot_play/gr00t/joints/gr00t_go2_airbot_joint_space.yaml"
+action_joints_config_path: "/mnt/nas2/users/shkim/work/projects/wfmrfm/go2_airbot_play/gr00t/joints/go2_airbot_joint_space.yaml"
+state_joints_config_path: "/mnt/nas2/users/shkim/work/projects/wfmrfm/go2_airbot_play/gr00t/joints/go2_airbot_joint_space.yaml"
+robot_type: "go2_airbot_play"
+
+# --- image size (MUST equal the recorded frame H x W x C) ----------------------------
+original_image_size: [480, 640, 3]
+target_image_size: [480, 640, 3]

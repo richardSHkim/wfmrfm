@@ -1,0 +1,23 @@
+# Copyright (c) 2026, WFMRFM project.
+# SPDX-License-Identifier: Apache-2.0
+
+# Isaac Lab (sim) joint ordering for the arrays stored in the collected HDF5 dataset
+# (obs `robot_joint_pos` and `processed_actions`). The converter remaps this order into the
+# GR00T-LeRobot order in ../gr00t_go2_airbot_joint_space.yaml.
+#
+# CONTRACT: the data-collection script must record `robot_joint_pos` and `processed_actions`
+# as exactly these 7 arm+gripper DOFs, in this order (leg joints excluded from the VLA arrays;
+# they are driven by the RL locomotion policy). If a future collection instead records the
+# full 21-DOF articulation, replace this map with the full Isaac Lab DOF order (dump it with
+#   robot.data.joint_names   # inside a running env
+# and index accordingly) and widen ../modality_converter.json to slice arm/gripper out of it.
+joints:
+  "joint1": 0
+  "joint2": 1
+  "joint3": 2
+  "joint4": 3
+  "joint5": 4
+  "joint6": 5
+  "g2_joint": 6
+
+total_joints: 7

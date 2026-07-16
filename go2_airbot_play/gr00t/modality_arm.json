@@ -1,0 +1,40 @@
+{
+    "state": {
+        "arm": {
+            "start": 0,
+            "end": 6,
+            "original_key": "observation.state"
+        },
+        "gripper": {
+            "start": 6,
+            "end": 7,
+            "original_key": "observation.state"
+        },
+        "arm_eef": {
+            "start": 0,
+            "end": 9,
+            "original_key": "observation.eef_pose"
+        }
+    },
+    "action": {
+        "gripper": {
+            "start": 0,
+            "end": 1
+        },
+        "arm_eef": {
+            "start": 0,
+            "end": 9,
+            "original_key": "action.eef_pose"
+        }
+    },
+    "video": {
+        "ego_view": {
+            "original_key": "observation.images.ego_view"
+        }
+    },
+    "annotation": {
+        "human.task_description": {
+            "original_key": "task_index"
+        }
+    }
+}

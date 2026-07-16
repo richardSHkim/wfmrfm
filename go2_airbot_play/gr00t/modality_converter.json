@@ -1,0 +1,45 @@
+{
+    "__comment__": "Converter-input template for the Arena HDF5->LeRobot converter. It is JOINT-ONLY on purpose: the converter concatenates every non-special action group into the `action` column, and it only skips the hardcoded names {left_wrist_pose,right_wrist_pose,base_height_command,navigate_command,torso_orientation_rpy_command}. If `arm_eef` appeared here it would be treated as a (missing) joint group and padded with zeros, corrupting the action column. The EEF groups (observation.eef_pose / action.eef_pose) are added afterwards by add_single_arm_eef.py, which then overwrites meta/modality.json with the canonical ../modality.json.",
+    "state": {
+        "arm": {
+            "start": 0,
+            "end": 6,
+            "original_key": "observation.state"
+        },
+        "gripper": {
+            "start": 6,
+            "end": 7,
+            "original_key": "observation.state"
+        }
+    },
+    "action": {
+        "arm": {
+            "start": 0,
+            "end": 6
+        },
+        "gripper": {
+            "start": 6,
+            "end": 7
+        },
+        "base_height_command": {
+            "start": 0,
+            "end": 1,
+            "original_key": "teleop.base_height_command"
+        },
+        "navigate_command": {
+            "start": 0,
+            "end": 3,
+            "original_key": "teleop.navigate_command"
+        }
+    },
+    "video": {
+        "ego_view": {
+            "original_key": "observation.images.ego_view"
+        }
+    },
+    "annotation": {
+        "human.task_description": {
+            "original_key": "task_index"
+        }
+    }
+}
