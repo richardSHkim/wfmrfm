@@ -192,7 +192,7 @@ class Go2AirbotPlayMapleTablePickPlaceEnvironment(ExampleEnvironmentBase):
         # Objects near the pedestal's FRONT edge (small x), inside the Airbot Play reach
         # envelope (~0.57 m from the shoulder) and under the wrist camera's downward view.
         # They spawn just above the surface and settle onto it.
-        obj_x = 0.35
+        obj_x = 0.30
         pick_up_object.set_initial_pose(
             Pose(position_xyz=(obj_x, 0.10, table_top_z + 0.05), rotation_xyzw=(0.0, 0.0, 0.0, 1.0))
         )
