@@ -1,6 +1,9 @@
 # Evaluation outputs (Isaac Lab Arena runs: logs, videos, per-episode results, reports)
 /eval/
 
+# Scratch / working files
+/scratchpad/
+
 # Python build artifacts
 __pycache__/
 *.py[cod]
