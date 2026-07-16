@@ -3,6 +3,7 @@
 
 # Scratch / working files
 /scratchpad/
+/scratchpad_out/
 
 # Python build artifacts
 __pycache__/
