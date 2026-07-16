@@ -17,8 +17,14 @@ Importing this module registers the ``go2_airbot_play`` embodiment (via the
 import argparse
 
 import isaaclab.envs.mdp as mdp_isaac_lab
+from isaaclab.controllers import DifferentialIKControllerCfg
 from isaaclab.envs.common import ViewerCfg
-from isaaclab.managers import TerminationTermCfg
+from isaaclab.envs.mdp.actions.actions_cfg import (
+    BinaryJointPositionActionCfg,
+    DifferentialInverseKinematicsActionCfg,
+    JointPositionActionCfg,
+)
+from isaaclab.managers import ActionTermCfg, TerminationTermCfg
 from isaaclab.utils import configclass
 from isaaclab_arena.tasks.no_task import NoTask
 from isaaclab_arena_environments.example_environment_base import ExampleEnvironmentBase
@@ -252,4 +258,146 @@ class Go2AirbotPlayMapleTablePickPlaceEnvironment(ExampleEnvironmentBase):
                 "Weld the Go2 base to the world (default) so it can't topple without a balance"
                 " controller. Use --no-fix_base for a free-floating base once WBC is wired."
             ),
+        )
+
+
+@configclass
+class _EefIkActionCfg:
+    """Differential-IK absolute-EEF arm control + binary parallel gripper.
+
+    This is the action space a GR00T Phase-1 policy drives: the arm is commanded by an
+    absolute end-effector POSE (pos + quat, in the robot base frame) solved with damped
+    least-squares IK, matching how ``scripts/collect_pickplace_dataset.py`` recorded the
+    dataset. Action layout per env step is an 8-vector: ``[x, y, z, qw, qx, qy, qz, grip]``.
+    The gripper term is binary (sign of the last element: >0 opens, <=0 closes).
+    """
+
+    arm_action: ActionTermCfg = DifferentialInverseKinematicsActionCfg(
+        asset_name="robot",
+        joint_names=["joint[1-6]"],
+        body_name="g2_base_link",
+        controller=DifferentialIKControllerCfg(command_type="pose", use_relative_mode=False, ik_method="dls"),
+        scale=1.0,
+    )
+    gripper_action: ActionTermCfg = BinaryJointPositionActionCfg(
+        asset_name="robot",
+        joint_names=["g2_joint", "g2_left_joint", "g2_right_joint"],
+        open_command_expr={"g2_joint": 0.072, "g2_left_joint": 0.036, "g2_right_joint": 0.036},
+        close_command_expr={"g2_joint": 0.0, "g2_left_joint": 0.0, "g2_right_joint": 0.0},
+    )
+
+
+@configclass
+class _JointArmActionCfg:
+    """Absolute joint-position arm control + binary parallel gripper.
+
+    The action space a GR00T **joint** policy drives: the arm is 6 absolute joint targets
+    (``scale=1``, ``use_default_offset=False`` so the command IS the absolute joint position,
+    matching the joint-action dataset), no IK. Action layout per step is a 7-vector:
+    ``[joint1..joint6, grip]`` (grip binary: >0 opens, <=0 closes).
+    """
+
+    arm_action: ActionTermCfg = JointPositionActionCfg(
+        asset_name="robot",
+        joint_names=["joint[1-6]"],
+        scale=1.0,
+        use_default_offset=False,
+    )
+    gripper_action: ActionTermCfg = BinaryJointPositionActionCfg(
+        asset_name="robot",
+        joint_names=["g2_joint", "g2_left_joint", "g2_right_joint"],
+        open_command_expr={"g2_joint": 0.072, "g2_left_joint": 0.036, "g2_right_joint": 0.036},
+        close_command_expr={"g2_joint": 0.0, "g2_left_joint": 0.0, "g2_right_joint": 0.0},
+    )
+
+
+class Go2AirbotPlayMapleTablePickPlaceEvalEnvironment(Go2AirbotPlayMapleTablePickPlaceEnvironment):
+    """Closed-loop **evaluation** variant of the maple-table pick-place env.
+
+    Identical scene / task / objects to the collection env, but swaps the arm to the
+    differential-IK absolute-EEF action space (:class:`_EefIkActionCfg`) so a GR00T Phase-1
+    policy (arm relative-EEF + gripper) can drive it directly. The base stays welded
+    (``--fix_base``, the Phase-1 assumption): no locomotion command is consumed here. The
+    ``PickAndPlaceTask`` success termination gives the eval success metric.
+
+        python isaaclab_arena/evaluation/policy_runner.py \
+            --external_environment_class_path \
+                go2_airbot_play.environment:Go2AirbotPlayMapleTablePickPlaceEvalEnvironment \
+            --policy_type go2airbot_gr00t_eef --enable_cameras --num_episodes 10 \
+            go2_airbot_play_maple_table_eval
+    """
+
+    name: str = "go2_airbot_play_maple_table_eval"
+
+    def get_env(self, args_cli: argparse.Namespace):
+        from isaaclab_arena.utils.pose import Pose, PoseRange
+
+        arena_env = super().get_env(args_cli)
+        # Set the arm action to match the deployed GR00T policy's action space:
+        #   ik_eef  -> differential-IK EEF pose (relative-EEF checkpoints)
+        #   joint   -> absolute joint targets   (joint-space checkpoints)
+        # Done on the built embodiment before the ArenaEnvBuilder composes the manager cfg.
+        if getattr(args_cli, "arm_action", "ik_eef") == "joint":
+            arena_env.embodiment.action_config = _JointArmActionCfg()
+        else:
+            arena_env.embodiment.action_config = _EefIkActionCfg()
+        # Render cameras at the dataset resolution (180x320) so the policy sees the same input
+        # distribution it was trained on, and to keep per-step ZMQ payloads light.
+        cc = arena_env.embodiment.camera_config
+        for cam in (cc.wrist_cam, cc.go2_front_cam, cc.overview_cam):
+            cam.height = 180
+            cam.width = 320
+        # Per-episode object-position randomization so the success rate reflects generalization
+        # rather than one fixed layout. Re-setting the initial pose to a PoseRange makes the
+        # object's reset event a uniform ``randomize_object_pose``. Ranges (world x,y on the
+        # pedestal top) mirror scripts/collect_pickplace_dataset.py — the training distribution:
+        # cube on the +y half, bowl on the -y half, both within the arm's top-down reach; z held
+        # at rest height and orientation left upright (rpy=0). Disable with --no-randomize_objects
+        # to keep the parent's FIXED training-like layout (cube (0.30,0.10), bowl (0.30,-0.14)).
+        tz = args_cli.table_z
+        rest_z = tz + 0.03
+        pick_xy = getattr(args_cli, "pick_pos_xy", None)
+        place_xy = getattr(args_cli, "place_pos_xy", None)
+        if pick_xy or place_xy:
+            # Explicit fixed positions (overrides randomization). Used to reproduce a specific
+            # dataset episode's layout for a replay control experiment.
+            if pick_xy:
+                arena_env.scene.assets[args_cli.object].set_initial_pose(
+                    Pose(position_xyz=(pick_xy[0], pick_xy[1], rest_z), rotation_xyzw=(0.0, 0.0, 0.0, 1.0))
+                )
+            if place_xy:
+                arena_env.scene.assets[args_cli.destination].set_initial_pose(
+                    Pose(position_xyz=(place_xy[0], place_xy[1], rest_z), rotation_xyzw=(0.0, 0.0, 0.0, 1.0))
+                )
+        elif getattr(args_cli, "randomize_objects", True):
+            arena_env.scene.assets[args_cli.object].set_initial_pose(
+                PoseRange(position_xyz_min=(0.26, 0.02, rest_z), position_xyz_max=(0.37, 0.26, rest_z))
+            )
+            arena_env.scene.assets[args_cli.destination].set_initial_pose(
+                PoseRange(position_xyz_min=(0.26, -0.26, rest_z), position_xyz_max=(0.37, -0.02, rest_z))
+            )
+        # else: keep the parent's fixed training-like layout.
+        return arena_env
+
+    @staticmethod
+    def add_cli_args(parser: argparse.ArgumentParser) -> None:
+        Go2AirbotPlayMapleTablePickPlaceEnvironment.add_cli_args(parser)
+        parser.add_argument(
+            "--arm_action", choices=["ik_eef", "joint"], default="ik_eef",
+            help="Arm action space: 'ik_eef' (differential-IK EEF pose) or 'joint' (absolute joint targets).",
+        )
+        parser.add_argument(
+            "--randomize_objects", action=argparse.BooleanOptionalAction, default=True,
+            help=(
+                "Randomize cube/bowl positions per episode over the training-distribution ranges"
+                " (default). Use --no-randomize_objects for the fixed training-like layout."
+            ),
+        )
+        parser.add_argument(
+            "--pick_pos_xy", type=float, nargs=2, default=None,
+            help="Explicit fixed world (x, y) for the pick object (overrides randomization); z = table_z+0.03.",
+        )
+        parser.add_argument(
+            "--place_pos_xy", type=float, nargs=2, default=None,
+            help="Explicit fixed world (x, y) for the destination (overrides randomization); z = table_z+0.03.",
         )

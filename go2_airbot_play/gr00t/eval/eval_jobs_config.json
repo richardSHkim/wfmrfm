@@ -1,0 +1,32 @@
+{
+  "_comment": "Aggregated eval config for Arena's eval_runner.py (multi-job success-rate + HTML report). The GR00T server (real checkpoint or dataset replay) must already be serving on remote_port. For a single-job rehearsal, prefer run_eval.sh (policy_runner). policy_config_dict keys map to Go2AirbotEefClosedloopPolicyCfg fields; arena_env_args keys map to the env CLI (external_environment_class_path selects our IK-EEF eval env). num_envs=1 is required for the ReplayPolicy server.",
+  "jobs": [
+    {
+      "name": "go2airbot_pickplace_cube_in_bowl",
+      "arena_env_args": {
+        "enable_cameras": true,
+        "num_envs": 1,
+        "external_environment_class_path": "go2_airbot_play.environment:Go2AirbotPlayMapleTablePickPlaceEvalEnvironment",
+        "environment": "go2_airbot_play_maple_table_eval",
+        "object": "rubiks_cube_hot3d_robolab",
+        "destination": "bowl_ycb_robolab",
+        "table_z": 0.40,
+        "robot_x": -0.15
+      },
+      "num_episodes": 10,
+      "policy_type": "go2_airbot_play.eval.gr00t_eef_policy.Go2AirbotEefClosedloopPolicy",
+      "policy_config_dict": {
+        "policy_device": "cuda:0",
+        "remote_host": "127.0.0.1",
+        "remote_port": 5555,
+        "action_horizon": 16,
+        "execution_horizon": 16,
+        "gripper_open_threshold": 0.036,
+        "front_cam_key": "go2_front_cam_rgb",
+        "wrist_cam_key": "wrist_cam_rgb",
+        "image_height": 180,
+        "image_width": 320
+      }
+    }
+  ]
+}
